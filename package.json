@@ -9,13 +9,23 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.1.1",
+    "antd": "^5.26.4",
+    "axios": "^1.10.0",
+    "dayjs": "^1.11.13",
+    "mongoose": "^8.16.3",
+    "multer": "^2.0.1",
+    "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.5"
+    "react-hook-form": "^7.60.0",
+    "zod": "^4.0.5",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
-    "@eslint/eslintrc": "^3"
+    "nodemon": "^3.1.10"
   }
 }
