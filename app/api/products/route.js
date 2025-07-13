@@ -1,9 +1,7 @@
 import dbConnect from '@/lib/dbConnect';
 import Product from '@/models/Product';
 import { NextResponse } from 'next/server';
-// import multer from 'multer';
-// import path from 'path';
-import { writeFile } from 'fs/promises';
+import cloudinary from '@/lib/cloudinary';
 
 export const config = {
   api: {
@@ -22,13 +20,19 @@ export async function POST(req) {
     const image = formData.get('image');
 
     let imageUrl = '';
+
+    // Upload image to Cloudinary
     if (image && typeof image === 'object') {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const filename = `${Date.now()}-${image.name}`;
-      const filepath = `./public/uploads/${filename}`;
-      await writeFile(filepath, buffer);
-      imageUrl = `/uploads/${filename}`;
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${image.type};base64,${base64}`;
+
+      const uploadRes = await cloudinary.uploader.upload(dataUrl, {
+        folder: 'products',
+      });
+
+      imageUrl = uploadRes.secure_url;
     }
 
     await dbConnect();
@@ -58,13 +62,15 @@ export async function GET(req) {
 
     const filter = {};
     if (status) filter.status = status;
-    if (startDate && endDate)
+    if (startDate && endDate) {
       filter.date = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
+    }
 
     const products = await Product.find(filter).sort({ date: -1 });
+
     return NextResponse.json(products);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
