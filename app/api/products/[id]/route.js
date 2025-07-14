@@ -1,20 +1,20 @@
-
-
-
 import dbConnect from '@/lib/dbConnect';
 import Product from '@/models/Product';
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import cloudinary from '@/lib/cloudinary';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 // GET /api/products/[id]
-export async function GET(request, { params }) {
+export async function GET(_, { params }) {
   try {
     await dbConnect();
-
     const product = await Product.findById(params.id);
-    if (!product) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
+    if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(product);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
 }
 
 // DELETE /api/products/[id]
-export async function DELETE(request, { params }) {
+export async function DELETE(_, { params }) {
   try {
     await dbConnect();
     await Product.findByIdAndDelete(params.id);
@@ -33,10 +33,10 @@ export async function DELETE(request, { params }) {
 }
 
 // PUT /api/products/[id]
-export async function PUT(request, { params }) {
+export async function PUT(req, { params }) {
   try {
     await dbConnect();
-    const formData = await request.formData();
+    const formData = await req.formData();
 
     const updatedFields = {
       title: formData.get('title'),
@@ -49,14 +49,18 @@ export async function PUT(request, { params }) {
     if (image && typeof image === 'object') {
       const bytes = await image.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const filename = `${Date.now()}-${image.name}`;
-      const filepath = `./public/uploads/${filename}`;
-      await writeFile(filepath, buffer);
-      updatedFields.imageUrl = `/uploads/${filename}`;
+      const base64 = buffer.toString('base64');
+      const dataURI = `data:${image.type};base64,${base64}`;
+
+      const uploadRes = await cloudinary.uploader.upload(dataURI, {
+        folder: 'products',
+      });
+
+      updatedFields.imageUrl = uploadRes.secure_url;
     }
 
-    const updated = await Product.findByIdAndUpdate(params.id, updatedFields, { new: true });
-    return NextResponse.json(updated);
+    const updatedProduct = await Product.findByIdAndUpdate(params.id, updatedFields, { new: true });
+    return NextResponse.json(updatedProduct);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
